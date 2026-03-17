@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { OnboardingOverlay } from "./OnboardingOverlay";
 import { StillGoodLogo } from "./StillGoodLogo";
 
 const links = [
@@ -16,6 +17,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-background">
+      {user ? <OnboardingOverlay userId={user.id} householdName={household?.name ?? null} /> : null}
       <div className="ambient-orb orb-a" />
       <div className="ambient-orb orb-b" />
       <div className="ambient-grid" />
