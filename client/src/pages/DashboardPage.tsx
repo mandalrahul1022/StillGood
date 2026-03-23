@@ -215,20 +215,27 @@ export function DashboardPage() {
           {suggestions.length === 0 ? (
             <EmptyState
               title="No recipe matches yet"
-              description="Use soon items will trigger local recipe suggestions here."
+              description="Use soon items will trigger recipe suggestions here."
             />
           ) : (
             <div className="recipe-grid">
               {suggestions.map((recipe) => (
                 <article className="recipe-card" key={recipe.name}>
-                  <h3>{recipe.name}</h3>
+                  {recipe.image && <img src={recipe.image} alt={recipe.name} className="recipe-image" />}
+                  {recipe.sourceUrl ? (
+                    <h3><a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer">{recipe.name}</a></h3>
+                  ) : (
+                    <h3>{recipe.name}</h3>
+                  )}
                   <p>Matched: {recipe.matchedIngredients.join(", ")}</p>
-                  <p>Time: {recipe.timeEstimate}</p>
-                  <ol>
-                    {recipe.shortSteps.map((step) => (
-                      <li key={step}>{step}</li>
-                    ))}
-                  </ol>
+                  {recipe.timeEstimate && <p>Time: {recipe.timeEstimate}</p>}
+                  {recipe.shortSteps.length > 0 && (
+                    <ol>
+                      {recipe.shortSteps.map((step) => (
+                        <li key={step}>{step}</li>
+                      ))}
+                    </ol>
+                  )}
                 </article>
               ))}
             </div>

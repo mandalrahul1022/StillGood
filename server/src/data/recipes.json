@@ -53,5 +53,221 @@
       "Cook in skillet and finish under broiler with cheese."
     ],
     "timeEstimate": "20 min"
+  },
+  {
+    "name": "Banana Pancakes",
+    "ingredients": ["banana", "egg", "milk", "oats"],
+    "shortSteps": [
+      "Mash banana and mix with eggs and oats.",
+      "Cook small rounds in a greased pan until golden."
+    ],
+    "timeEstimate": "15 min"
+  },
+  {
+    "name": "Tomato Egg Scramble",
+    "ingredients": ["tomato", "egg", "onion"],
+    "shortSteps": [
+      "Saute chopped onion and tomato until soft.",
+      "Add beaten eggs and scramble until just set."
+    ],
+    "timeEstimate": "10 min"
+  },
+  {
+    "name": "Garlic Butter Mushrooms on Toast",
+    "ingredients": ["mushroom", "garlic", "bread", "butter"],
+    "shortSteps": [
+      "Saute mushrooms and garlic in butter until golden.",
+      "Serve over toasted bread."
+    ],
+    "timeEstimate": "15 min"
+  },
+  {
+    "name": "Greek Salad",
+    "ingredients": ["tomato", "cucumber", "onion", "cheese"],
+    "shortSteps": [
+      "Chop tomatoes, cucumber, and onion.",
+      "Toss with olive oil and top with feta."
+    ],
+    "timeEstimate": "10 min"
+  },
+  {
+    "name": "Avocado Toast",
+    "ingredients": ["avocado", "bread", "egg", "tomato"],
+    "shortSteps": [
+      "Toast bread and mash avocado on top.",
+      "Add sliced tomato and a fried egg."
+    ],
+    "timeEstimate": "10 min"
+  },
+  {
+    "name": "Potato Soup",
+    "ingredients": ["potato", "onion", "milk", "cheese"],
+    "shortSteps": [
+      "Boil diced potato and onion until tender.",
+      "Blend with milk, season, and top with cheese."
+    ],
+    "timeEstimate": "30 min"
+  },
+  {
+    "name": "Carrot Ginger Soup",
+    "ingredients": ["carrot", "onion", "ginger", "milk"],
+    "shortSteps": [
+      "Saute onion and ginger, add chopped carrots and water.",
+      "Simmer 20 min, blend smooth, stir in a splash of milk."
+    ],
+    "timeEstimate": "30 min"
+  },
+  {
+    "name": "Chicken Fried Rice",
+    "ingredients": ["chicken", "egg", "carrot", "onion"],
+    "shortSteps": [
+      "Stir-fry chicken with onion and carrot.",
+      "Push to the side, scramble eggs, mix in cooked rice with soy sauce."
+    ],
+    "timeEstimate": "20 min"
+  },
+  {
+    "name": "Beef Stir Fry",
+    "ingredients": ["beef", "broccoli", "carrot", "onion"],
+    "shortSteps": [
+      "Slice beef thin and stir-fry on high heat.",
+      "Add vegetables and toss with soy sauce and garlic."
+    ],
+    "timeEstimate": "20 min"
+  },
+  {
+    "name": "Tuna Pasta",
+    "ingredients": ["tuna", "pasta", "tomato", "onion"],
+    "shortSteps": [
+      "Cook pasta and drain.",
+      "Mix with canned tuna, diced tomato, and sauteed onion."
+    ],
+    "timeEstimate": "20 min"
+  },
+  {
+    "name": "Salmon with Vegetables",
+    "ingredients": ["salmon", "broccoli", "carrot", "garlic"],
+    "shortSteps": [
+      "Season salmon and bake at 200°C for 15 min.",
+      "Roast broccoli and carrots with garlic alongside."
+    ],
+    "timeEstimate": "25 min"
+  },
+  {
+    "name": "Lentil Soup",
+    "ingredients": ["lentils", "tomato", "onion", "garlic"],
+    "shortSteps": [
+      "Saute onion and garlic, add lentils and diced tomato.",
+      "Cover with water and simmer 25 min until tender."
+    ],
+    "timeEstimate": "35 min"
+  },
+  {
+    "name": "Chickpea Curry",
+    "ingredients": ["chickpeas", "tomato", "onion", "garlic"],
+    "shortSteps": [
+      "Fry onion and garlic with curry powder.",
+      "Add chickpeas and tomato, simmer 15 min."
+    ],
+    "timeEstimate": "25 min"
+  },
+  {
+    "name": "Egg Fried Rice",
+    "ingredients": ["egg", "carrot", "onion", "leftovers"],
+    "shortSteps": [
+      "Stir-fry onion and carrot, push aside and scramble eggs.",
+      "Mix in leftover rice and season with soy sauce."
+    ],
+    "timeEstimate": "15 min"
+  },
+  {
+    "name": "French Toast",
+    "ingredients": ["bread", "egg", "milk", "banana"],
+    "shortSteps": [
+      "Whisk eggs with milk and dip bread slices.",
+      "Fry until golden and serve with sliced banana."
+    ],
+    "timeEstimate": "15 min"
+  },
+  {
+    "name": "Smoothie Bowl",
+    "ingredients": ["banana", "berries", "yogurt", "oats"],
+    "shortSteps": [
+      "Blend banana and berries with yogurt until smooth.",
+      "Pour into a bowl and top with oats."
+    ],
+    "timeEstimate": "10 min"
+  },
+  {
+    "name": "Zucchini Fritters",
+    "ingredients": ["zucchini", "egg", "cheese", "onion"],
+    "shortSteps": [
+      "Grate zucchini and squeeze out moisture.",
+      "Mix with egg, cheese, and onion, fry until golden."
+    ],
+    "timeEstimate": "20 min"
+  },
+  {
+    "name": "Baked Potato",
+    "ingredients": ["potato", "cheese", "butter"],
+    "shortSteps": [
+      "Prick potato and bake at 200°C for 50 min.",
+      "Split and top with butter and cheese."
+    ],
+    "timeEstimate": "55 min"
+  },
+  {
+    "name": "Mushroom Pasta",
+    "ingredients": ["mushroom", "pasta", "garlic", "cheese"],
+    "shortSteps": [
+      "Saute mushrooms and garlic in butter.",
+      "Toss with cooked pasta and parmesan."
+    ],
+    "timeEstimate": "20 min"
+  },
+  {
+    "name": "Tomato Soup",
+    "ingredients": ["tomato", "onion", "garlic"],
+    "shortSteps": [
+      "Roast tomatoes, onion, and garlic in oven.",
+      "Blend with stock and season to taste."
+    ],
+    "timeEstimate": "35 min"
+  },
+  {
+    "name": "Caprese Salad",
+    "ingredients": ["tomato", "cheese"],
+    "shortSteps": [
+      "Slice tomatoes and mozzarella alternately.",
+      "Drizzle with olive oil and season."
+    ],
+    "timeEstimate": "5 min"
+  },
+  {
+    "name": "Broccoli Cheese Soup",
+    "ingredients": ["broccoli", "cheese", "milk", "onion"],
+    "shortSteps": [
+      "Saute onion, add broccoli and milk, simmer 15 min.",
+      "Blend partially and stir in cheese."
+    ],
+    "timeEstimate": "25 min"
+  },
+  {
+    "name": "Apple Oat Porridge",
+    "ingredients": ["apple", "oats", "milk"],
+    "shortSteps": [
+      "Cook oats with milk over medium heat.",
+      "Stir in grated apple and a pinch of cinnamon."
+    ],
+    "timeEstimate": "10 min"
+  },
+  {
+    "name": "Cucumber Yogurt Dip",
+    "ingredients": ["cucumber", "yogurt", "garlic"],
+    "shortSteps": [
+      "Grate cucumber and squeeze out liquid.",
+      "Mix with yogurt and crushed garlic, chill before serving."
+    ],
+    "timeEstimate": "10 min"
   }
 ]

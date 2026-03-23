@@ -49,6 +49,8 @@ export interface Alert {
 
 export interface RecipeSuggestion {
   name: string;
+  image: string | null;
+  sourceUrl: string | null;
   matchedIngredients: string[];
   shortSteps: string[];
   timeEstimate: string;
