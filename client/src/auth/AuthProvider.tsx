@@ -34,6 +34,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void refresh();
+
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) void refresh();
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
   }, []);
 
   const login = async (email: string, password: string) => {
