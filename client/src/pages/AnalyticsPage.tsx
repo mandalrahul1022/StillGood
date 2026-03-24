@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { AnalyticsEvents, AnalyticsSummary, api } from "../api/client";
-import { BarChart } from "../components/BarChart";
+import { DonutChart } from "../components/DonutChart";
+import { LineChart } from "../components/LineChart";
 import { EmptyState } from "../components/EmptyState";
 import { HouseholdSetup } from "../components/HouseholdSetup";
 import { useAuth } from "../auth/AuthProvider";
+
+const CATEGORY_ICONS: Record<string, string> = {
+  produce: "🥦", dairy: "🥛", meat: "🥩", bread: "🍞",
+  frozen: "🧊", beverages: "🥤", condiments: "🧴", grains: "🌾",
+  snacks: "🍿", leftovers: "🍱", other: "📦"
+};
 
 export function AnalyticsPage() {
   const { household } = useAuth();
@@ -14,9 +21,7 @@ export function AnalyticsPage() {
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
-    if (!household) {
-      return;
-    }
+    if (!household) return;
     setLoading(true);
     setError(null);
     try {
@@ -33,9 +38,7 @@ export function AnalyticsPage() {
     }
   }, [household, range]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
   if (!household) {
     return (
@@ -49,94 +52,93 @@ export function AnalyticsPage() {
     );
   }
 
+  const maxWasted = events?.topCategoriesWasted[0]?.count ?? 1;
+
   return (
     <section className="stack">
       <div className="row between">
         <h2>Analytics</h2>
-        <select value={range} onChange={(event) => setRange(event.target.value as "week" | "month")}>
+        <select value={range} onChange={(e) => setRange(e.target.value as "week" | "month")}>
           <option value="week">Last 7 days</option>
           <option value="month">Last 30 days</option>
         </select>
       </div>
-      {error ? <p className="error-text">{error}</p> : null}
-      {loading ? <p>Loading analytics...</p> : null}
-      {summary ? (
+
+      {error && <p className="error-text">{error}</p>}
+      {loading && <p className="analytics-loading">Loading analytics…</p>}
+
+      {summary && (
         <div className="metric-grid">
           <article className="metric-card">
-            <span>Added This Week</span>
+            <span>Added this week</span>
             <strong>{summary.itemsAddedThisWeek}</strong>
           </article>
           <article className="metric-card">
-            <span>Consumed This Week</span>
-            <strong>{summary.itemsConsumedThisWeek}</strong>
+            <span>Consumed this week</span>
+            <strong className="metric-good">{summary.itemsConsumedThisWeek}</strong>
           </article>
           <article className="metric-card">
-            <span>Expired This Week</span>
-            <strong>{summary.itemsExpiredThisWeek}</strong>
+            <span>Expired this week</span>
+            <strong className="metric-bad">{summary.itemsExpiredThisWeek}</strong>
           </article>
           <article className="metric-card">
-            <span>Estimated Savings</span>
-            <strong>${summary.estimatedSavings.toFixed(2)}</strong>
+            <span>Estimated savings</span>
+            <strong className="metric-good">${summary.estimatedSavings.toFixed(2)}</strong>
           </article>
         </div>
-      ) : null}
+      )}
 
-      {summary ? (
-        <BarChart
-          title="Consumed vs Expired"
-          data={[
-            { label: "Consumed", value: summary.consumedVsExpired.consumed, tone: "good" },
-            { label: "Expired", value: summary.consumedVsExpired.expired, tone: "bad" }
-          ]}
-        />
-      ) : null}
-
-      <section className="panel">
-        <h3>Trend ({range})</h3>
-        {!events || events.series.length === 0 ? (
-          <EmptyState
-            title="No analytics events"
-            description="Open, consume, and let items expire to generate trends."
+      <div className="analytics-charts-row">
+        {summary && (
+          <DonutChart
+            consumed={summary.consumedVsExpired.consumed}
+            expired={summary.consumedVsExpired.expired}
           />
-        ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Consumed</th>
-                  <th>Expired</th>
-                </tr>
-              </thead>
-              <tbody>
-                {events.series.map((row) => (
-                  <tr key={row.date}>
-                    <td>{row.date}</td>
-                    <td>{row.consumed}</td>
-                    <td>{row.expired}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         )}
-      </section>
 
-      <section className="panel">
-        <h3>Top Categories Wasted</h3>
-        {!events || events.topCategoriesWasted.length === 0 ? (
-          <EmptyState title="No wasted categories" description="Great job keeping waste low." />
-        ) : (
-          <ul className="list-clean">
-            {events.topCategoriesWasted.map((entry) => (
-              <li key={entry.category}>
-                <span>{entry.category}</span>
-                <strong>{entry.count}</strong>
-              </li>
-            ))}
-          </ul>
+        {events && events.topCategoriesWasted.length > 0 && (
+          <section className="panel analytics-categories">
+            <h3>Most wasted categories</h3>
+            <div className="category-bars">
+              {events.topCategoriesWasted.map((entry) => (
+                <div key={entry.category} className="category-bar-row">
+                  <span className="category-bar-label">
+                    {CATEGORY_ICONS[entry.category] ?? "📦"} {entry.category}
+                  </span>
+                  <div className="category-bar-track">
+                    <div
+                      className="category-bar-fill"
+                      style={{ width: `${(entry.count / maxWasted) * 100}%` }}
+                    />
+                  </div>
+                  <span className="category-bar-count">{entry.count}</span>
+                </div>
+              ))}
+            </div>
+          </section>
         )}
-      </section>
+
+        {events && events.topCategoriesWasted.length === 0 && (
+          <section className="panel analytics-categories">
+            <h3>Most wasted categories</h3>
+            <EmptyState title="No waste recorded" description="Great job keeping waste low." />
+          </section>
+        )}
+      </div>
+
+      {events && events.series.length > 0 ? (
+        <LineChart series={events.series} range={range} />
+      ) : (
+        !loading && (
+          <section className="panel">
+            <h3>Trend over time</h3>
+            <EmptyState
+              title="No trend data yet"
+              description="Open, consume, and let items expire to generate trends."
+            />
+          </section>
+        )
+      )}
     </section>
   );
 }

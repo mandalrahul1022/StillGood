@@ -440,6 +440,164 @@ select:focus {
   color: var(--danger);
 }
 
+/* ── Analytics ────────────────────────────────────────────────────── */
+
+.metric-good { color: var(--accent); }
+.metric-bad  { color: var(--danger); }
+
+.analytics-loading {
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+
+.analytics-charts-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.analytics-chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.analytics-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.legend-dot.consumed { background: #1f8f57; }
+.legend-dot.expired  { background: #e05c5c; }
+
+.line-chart-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Donut */
+.donut-panel { flex: 0 0 auto; }
+
+.donut-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.donut-svg {
+  width: 140px;
+  height: 140px;
+}
+
+.donut-legend {
+  display: flex;
+  gap: 20px;
+}
+
+.donut-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.donut-stat div {
+  display: flex;
+  flex-direction: column;
+}
+
+.donut-stat strong {
+  font-size: 20px;
+  line-height: 1;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.donut-stat span {
+  font-size: 11px;
+  color: var(--ink-xsoft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+/* Category bars */
+.analytics-categories { flex: 1; }
+
+.category-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.category-bar-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 28px;
+  align-items: center;
+  gap: 10px;
+}
+
+.category-bar-label {
+  font-size: 13px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+}
+
+.category-bar-track {
+  height: 8px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.category-bar-fill {
+  height: 100%;
+  background: #e05c5c;
+  border-radius: 999px;
+  transition: width 600ms ease;
+  min-width: 4px;
+}
+
+.category-bar-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  .analytics-charts-row {
+    grid-template-columns: 1fr;
+  }
+
+  .donut-wrap {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .category-bar-row {
+    grid-template-columns: 90px 1fr 24px;
+  }
+}
+
 /* ── Segmented control ────────────────────────────────────────────── */
 
 .segmented {
