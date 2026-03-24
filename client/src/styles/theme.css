@@ -1090,6 +1090,7 @@ tr.row-expired td:first-child {
   position: relative;
   background: #000;
   aspect-ratio: 3 / 4;
+  max-height: 55vh;
   overflow: hidden;
 }
 
