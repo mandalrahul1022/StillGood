@@ -133,7 +133,7 @@ analyticsRouter.get(
 );
 
 analyticsRouter.get(
-  "/events",
+  "/history",
   requireAuth,
   requireHousehold,
   validate(eventRangeSchema),

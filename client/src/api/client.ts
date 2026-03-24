@@ -231,7 +231,7 @@ export const api = {
   recipeSuggestions: () => apiRequest<{ suggestions: RecipeSuggestion[] }>("/recipes/suggestions"),
   analyticsSummary: () => apiRequest<AnalyticsSummary>("/analytics/summary"),
   analyticsEvents: (range: "week" | "month") =>
-    apiRequest<AnalyticsEvents>(`/analytics/events?range=${range}`),
+    apiRequest<AnalyticsEvents>(`/analytics/history?range=${range}`),
   integrationsStatus: () =>
     apiRequest<{ title: string; connected: boolean; description: string }>("/integrations/status"),
   scanReceipt: (file: File) => {
