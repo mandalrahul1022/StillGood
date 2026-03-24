@@ -1089,7 +1089,7 @@ tr.row-expired td:first-child {
 .camera-viewfinder {
   position: relative;
   background: #000;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
 }
 
