@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm prisma:generate && cross-env DATABASE_URL=file:./dev.db tsx watch src/index.ts",
-    "build": "prisma generate && tsc -p tsconfig.json",
+    "build": "cross-env DATABASE_URL=file:./dummy.db prisma generate && tsc -p tsconfig.json",
     "start": "node dist/scripts/applyMigrations.js && node dist/index.js",
     "lint": "tsc --noEmit",
     "test": "cross-env DATABASE_URL=file:./test.db prisma generate && cross-env DATABASE_URL=file:./test.db tsx src/scripts/applyMigrations.ts && cross-env DATABASE_URL=file:./test.db vitest run",
