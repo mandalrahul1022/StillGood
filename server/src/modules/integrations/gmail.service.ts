@@ -7,6 +7,12 @@ export interface ScannedGmailItem {
   name: string;
   category: string;
   quantity: string;
+  /**
+   * Optional per-item freshness hint from Gemini in days. Only set when
+   * Gemini recognized a specific food (e.g. "bananas" -> 5). Piped into
+   * `customFreshDays` on the Item so it overrides the category rule.
+   */
+  freshDays?: number;
 }
 
 /**
@@ -143,9 +149,10 @@ Rules:
 - Normalize names to singular lowercase English (e.g. "Organic Bananas 2lb" -> "bananas").
 - Categorize each item as exactly one of: dairy, meat, bread, produce, beverages, grains, snacks, condiments, frozen, other.
 - quantity is a short human string like "1 unit", "2 units", "1 lb", "12 oz", "1 dozen".
+- freshDays is YOUR best estimate of how many days this specific food stays good UNOPENED from today at typical fridge/pantry storage. Use your knowledge of that specific food, not the category. Examples: bananas 5, apples 28, strawberries 5, whole milk 7, greek yogurt 14, ground beef 2, chicken breast 2, sliced bread 7, eggs 28, hard cheese 30, canned beans 365, rice 365, frozen berries 180. If you are NOT confident in the specific food, OMIT freshDays for that item and we will fall back to the category default. Integer days only, max 730.
 
 Return ONLY a JSON object matching this TypeScript type:
-{ "items": Array<{ "name": string, "category": "dairy"|"meat"|"bread"|"produce"|"beverages"|"grains"|"snacks"|"condiments"|"frozen"|"other", "quantity": string }> }
+{ "items": Array<{ "name": string, "category": "dairy"|"meat"|"bread"|"produce"|"beverages"|"grains"|"snacks"|"condiments"|"frozen"|"other", "quantity": string, "freshDays"?: number }> }
 
 Email subject: {{SUBJECT}}
 Email from: {{FROM}}
@@ -211,7 +218,8 @@ async function extractItemsWithGemini(
               properties: {
                 name: { type: "STRING" },
                 category: { type: "STRING" },
-                quantity: { type: "STRING" }
+                quantity: { type: "STRING" },
+                freshDays: { type: "INTEGER" }
               },
               required: ["name", "category", "quantity"]
             }
@@ -270,7 +278,14 @@ async function extractItemsWithGemini(
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   if (!text.trim()) return [];
 
-  let parsed: { items?: Array<{ name?: string; category?: string; quantity?: string }> };
+  let parsed: {
+    items?: Array<{
+      name?: string;
+      category?: string;
+      quantity?: string;
+      freshDays?: number | string;
+    }>;
+  };
   try {
     parsed = JSON.parse(text);
   } catch {
@@ -280,14 +295,23 @@ async function extractItemsWithGemini(
 
   const items = Array.isArray(parsed.items) ? parsed.items : [];
   return items
-    .map((raw) => {
+    .map((raw): ScannedGmailItem => {
       const name = (raw.name ?? "").trim().toLowerCase();
       const category = (raw.category ?? "other").trim().toLowerCase();
       const quantity = (raw.quantity ?? "1 unit").trim() || "1 unit";
+      // Clamp Gemini's estimate to a sane range. 0/negative and absurdly
+      // large values usually mean the model was guessing, so drop them and
+      // let the category rule take over.
+      const rawFresh = typeof raw.freshDays === "string" ? Number(raw.freshDays) : raw.freshDays;
+      const freshDays =
+        typeof rawFresh === "number" && Number.isFinite(rawFresh) && rawFresh >= 1 && rawFresh <= 730
+          ? Math.round(rawFresh)
+          : undefined;
       return {
         name,
         category: VALID_CATEGORIES.has(category) ? category : "other",
-        quantity
+        quantity,
+        ...(freshDays !== undefined ? { freshDays } : {})
       };
     })
     .filter((item) => item.name.length >= 2 && item.name.length <= 120);

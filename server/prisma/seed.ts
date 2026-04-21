@@ -49,7 +49,14 @@ async function main() {
     { category: "dairy", unopenedDays: 7, openedDays: 4 },
     { category: "produce", unopenedDays: 5, openedDays: 3 },
     { category: "meat", unopenedDays: 3, openedDays: 2 },
-    { category: "leftovers", unopenedDays: 4, openedDays: 2 }
+    { category: "leftovers", unopenedDays: 4, openedDays: 2 },
+    { category: "bread", unopenedDays: 7, openedDays: 5 },
+    { category: "beverages", unopenedDays: 14, openedDays: 7 },
+    { category: "grains", unopenedDays: 180, openedDays: 60 },
+    { category: "snacks", unopenedDays: 60, openedDays: 14 },
+    { category: "condiments", unopenedDays: 180, openedDays: 60 },
+    { category: "frozen", unopenedDays: 60, openedDays: 14 },
+    { category: "other", unopenedDays: 14, openedDays: 7 }
   ];
 
   for (const rule of rules) {

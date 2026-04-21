@@ -212,10 +212,16 @@ integrationsRouter.post(
     const now = new Date();
     const createdItems = await Promise.all(
       toCreate.map(async (scanned) => {
+        // Prefer Gemini's per-food estimate when provided. The freshness
+        // engine treats customFreshDays as an explicit override, so this
+        // effectively gives each recognized item its own timeline instead
+        // of the broad category rule.
+        const customFreshDays = scanned.freshDays ?? null;
         const computed = await buildComputedFields(prisma, {
           category: scanned.category,
           dateAdded: now,
-          opened: false
+          opened: false,
+          customFreshDays
         });
         return prisma.item.create({
           data: {
@@ -226,6 +232,7 @@ integrationsRouter.post(
             quantity: scanned.quantity,
             dateAdded: now,
             opened: false,
+            customFreshDays,
             expiresAt: computed.expiresAt,
             daysRemaining: computed.daysRemaining,
             status: computed.status,
