@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { StillGoodLogo } from "../components/StillGoodLogo";
+import { GoogleSignInButton } from "../components/GoogleSignInButton";
 
 export function RegisterPage() {
   const { user, register } = useAuth();
@@ -126,6 +127,12 @@ export function RegisterPage() {
           <button className="button" type="submit" disabled={submitting}>
             {submitting ? "Creating account…" : "Create my account →"}
           </button>
+
+          <div className="auth-divider" role="separator" aria-label="or">
+            <span>or</span>
+          </div>
+
+          <GoogleSignInButton label="Continue with Google" />
 
           <p className="auth-form-foot">
             Already have an account? <Link to="/login">Sign in</Link>

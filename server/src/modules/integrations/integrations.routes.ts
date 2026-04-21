@@ -11,30 +11,28 @@ import { buildComputedFields, trackEvent } from "../items/items.service.js";
 export const integrationsRouter = Router();
 
 /**
- * Gmail OAuth is served from the API host (server). In production the client
- * and server live on different hostnames (e.g. Vercel + Railway), so prefer
- * the explicit SERVER_PUBLIC_URL. In local dev we fall back to swapping the
- * port of CLIENT_ORIGIN (5173 -> 4000).
+ * Gmail OAuth redirect URI.
+ *
+ * Anchored to CLIENT_ORIGIN (Vercel) rather than the Railway server hostname
+ * so the callback arrives on the same origin the user's session cookie was
+ * issued for. The Vercel rewrite in client/vercel.json forwards /api/*
+ * through to Railway, so the server still handles the request — it just
+ * looks to the browser like a same-origin navigation, which keeps the auth
+ * cookie attached and `requireAuth` working.
  */
-function getServerOrigin(): string {
-  if (env.SERVER_PUBLIC_URL) {
-    return env.SERVER_PUBLIC_URL.replace(/\/$/, "");
-  }
-  try {
-    const url = new URL(env.CLIENT_ORIGIN);
-    url.port = String(env.PORT);
-    return url.origin;
-  } catch {
-    return `http://localhost:${env.PORT}`;
-  }
+function getGmailRedirectUri(): string {
+  return `${env.CLIENT_ORIGIN.replace(/\/$/, "")}/api/integrations/gmail/callback`;
 }
 
 function getOAuthClient() {
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
     throw new AppError(503, "GMAIL_NOT_CONFIGURED", "Gmail integration is not configured.");
   }
-  const redirectUri = `${getServerOrigin()}/api/integrations/gmail/callback`;
-  return new google.auth.OAuth2(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, redirectUri);
+  return new google.auth.OAuth2(
+    env.GOOGLE_CLIENT_ID,
+    env.GOOGLE_CLIENT_SECRET,
+    getGmailRedirectUri()
+  );
 }
 
 // GET /integrations/status

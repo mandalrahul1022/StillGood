@@ -1,15 +1,41 @@
-import { FormEvent, useState } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { FormEvent, useMemo, useState } from "react";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { StillGoodLogo } from "../components/StillGoodLogo";
+import { GoogleSignInButton } from "../components/GoogleSignInButton";
+
+function formatOAuthError(code: string | null): string | null {
+  if (!code) return null;
+  switch (code) {
+    case "access_denied":
+      return "Google sign-in was cancelled.";
+    case "email_not_verified":
+      return "Your Google email isn't verified. Verify it with Google and try again.";
+    case "state_expired":
+    case "state_mismatch":
+      return "Sign-in took too long or was opened in a new tab. Please try again.";
+    case "token_exchange_failed":
+    case "id_token_decode_failed":
+    case "no_id_token":
+      return "Google returned an unexpected response. Please try again.";
+    default:
+      return "Google sign-in failed. Please try again.";
+  }
+}
 
 export function LoginPage() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const oauthError = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return formatOAuthError(params.get("error"));
+  }, [location.search]);
 
   if (user) {
     return <Navigate to="/" replace />;
@@ -108,10 +134,17 @@ export function LoginPage() {
           </div>
 
           {error ? <p className="error-text">{error}</p> : null}
+          {!error && oauthError ? <p className="error-text">{oauthError}</p> : null}
 
           <button className="button" type="submit" disabled={submitting}>
             {submitting ? "Signing in…" : "Sign in →"}
           </button>
+
+          <div className="auth-divider" role="separator" aria-label="or">
+            <span>or</span>
+          </div>
+
+          <GoogleSignInButton label="Sign in with Google" />
 
           <p className="auth-form-foot">
             No account yet? <Link to="/register">Create one in 30 seconds</Link>
