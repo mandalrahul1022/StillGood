@@ -14,3 +14,4 @@ server/prisma/test.db-journal
 client/dist
 .pnpm-store
 .vscode
+*.tsbuildinfo
