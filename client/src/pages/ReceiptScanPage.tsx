@@ -64,7 +64,7 @@ function CameraModal({ onCapture, onClose }: {
     <div className="camera-modal-backdrop" onClick={onClose}>
       <div className="camera-modal" onClick={(e) => e.stopPropagation()}>
         <div className="camera-modal-header">
-          <strong>Take a Photo</strong>
+          <strong>Take a photo</strong>
           <button className="camera-close-btn" onClick={onClose}>✕</button>
         </div>
 
@@ -99,6 +99,28 @@ function CameraModal({ onCapture, onClose }: {
   );
 }
 
+function Stepper({ stage }: { stage: Stage }) {
+  const states = (function () {
+    if (stage === "idle") return ["active", "pending", "pending"];
+    if (stage === "scanning") return ["active", "pending", "pending"];
+    if (stage === "reviewing" || stage === "adding") return ["done", "active", "pending"];
+    return ["done", "done", "done"];
+  })();
+
+  const labels = ["Upload receipt", "Review items", "Add to inventory"];
+
+  return (
+    <div className="scan-stepper" role="list">
+      {labels.map((label, i) => (
+        <div key={label} className={`scan-step ${states[i]}`} role="listitem">
+          <div className="scan-step-num"><span>{i + 1}</span></div>
+          <span className="scan-step-label">{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ReceiptScanPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -117,7 +139,7 @@ export function ReceiptScanPage() {
     try {
       const result = await api.scanReceipt(file);
       if (result.items.length === 0) {
-        setError("No grocery items were detected on this receipt. Try a clearer photo.");
+        setError("No grocery items were detected on this receipt. Try a clearer photo with even lighting.");
         setStage("idle");
         return;
       }
@@ -145,6 +167,10 @@ export function ReceiptScanPage() {
     setReviewItems((prev) => prev.map((item, i) => (i === index ? { ...item, ...patch } : item)));
   };
 
+  const toggleAll = (selected: boolean) => {
+    setReviewItems((prev) => prev.map((item) => ({ ...item, selected })));
+  };
+
   const selectedItems = reviewItems.filter((i) => i.selected);
 
   const addAll = async () => {
@@ -156,7 +182,7 @@ export function ReceiptScanPage() {
         count++;
         setAddedCount(count);
       } catch {
-        // continue adding remaining items
+        // continue
       }
     }
     setStage("done");
@@ -165,14 +191,36 @@ export function ReceiptScanPage() {
   if (stage === "done") {
     return (
       <section className="stack">
+        <div className="page-hero">
+          <div className="page-hero-icon sage">🎉</div>
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <span className="section-eyebrow sage">Receipt imported</span>
+            <h2>
+              {addedCount} {addedCount === 1 ? "item" : "items"} <em>added</em>.
+            </h2>
+            <p>Your fridge got a little smarter. Back to the kitchen?</p>
+          </div>
+        </div>
+
         <div className="panel receipt-done">
           <div className="receipt-done-icon">✅</div>
-          <h2>{addedCount} {addedCount === 1 ? "item" : "items"} added to inventory</h2>
-          <p>Your receipt has been imported successfully.</p>
-          <div className="row" style={{ justifyContent: "center", marginTop: 8 }}>
-            <button className="button" onClick={() => navigate("/")}>View Inventory</button>
-            <button className="button ghost" onClick={() => { setStage("idle"); setReviewItems([]); setStoreInfo(null); }}>
-              Scan Another
+          <h2>Nicely done.</h2>
+          <p>
+            Everything from that receipt is now tracked and will alert you
+            before it turns.
+          </p>
+          <div className="row" style={{ justifyContent: "center", marginTop: 8, gap: 10, flexWrap: "wrap" }}>
+            <button className="button" onClick={() => navigate("/")}>View inventory →</button>
+            <button
+              className="button ghost"
+              onClick={() => {
+                setStage("idle");
+                setReviewItems([]);
+                setStoreInfo(null);
+                setAddedCount(0);
+              }}
+            >
+              Scan another
             </button>
           </div>
         </div>
@@ -190,10 +238,22 @@ export function ReceiptScanPage() {
       )}
 
       <section className="stack">
-        <div className="panel">
-          <h2>Receipt Scanner</h2>
-          <p>Upload a photo of your grocery receipt to bulk-import items into your inventory.</p>
+        <div className="page-hero">
+          <div className="page-hero-icon">🧾</div>
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <span className="section-eyebrow">Receipt scan station</span>
+            <h2>
+              A whole week of groceries, in <em>one photo</em>.
+            </h2>
+            <p>
+              Drop a receipt image or use your camera — we&rsquo;ll read the
+              items, guess the category, and let you rubber-stamp everything
+              into your inventory.
+            </p>
+          </div>
         </div>
+
+        <Stepper stage={stage} />
 
         {stage === "idle" || stage === "scanning" ? (
           <div className="panel stack">
@@ -202,42 +262,77 @@ export function ReceiptScanPage() {
               type="file"
               accept="image/jpeg,image/png,image/webp,application/pdf"
               style={{ display: "none" }}
-              onChange={(e) => { handleFile(e.target.files?.[0]); e.target.value = ""; }}
+              onChange={(e) => {
+                handleFile(e.target.files?.[0]);
+                e.target.value = "";
+              }}
             />
 
             {stage === "scanning" ? (
-              <div className="receipt-dropzone scanning">
-                <div className="receipt-scanning-state">
-                  <div className="scan-spinner" />
-                  <strong>Reading your receipt…</strong>
-                  <p>This usually takes 5–15 seconds</p>
-                </div>
+              <div className="receipt-dropzone-v2 scanning">
+                <div className="scan-spinner" style={{ margin: "0 auto 14px" }} />
+                <h3>
+                  Reading your <em>receipt</em>…
+                </h3>
+                <p>Normally takes 5&ndash;15 seconds. Hang tight.</p>
               </div>
             ) : (
               <>
                 <div
-                  className={`receipt-dropzone${isDragOver ? " drag-over" : ""}`}
+                  className={`receipt-dropzone-v2${isDragOver ? " drag-over" : ""}`}
                   onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsDragOver(true);
+                  }}
                   onDragLeave={() => setIsDragOver(false)}
                   onDrop={handleDrop}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click();
+                  }}
                 >
-                  <div className="receipt-idle-state">
-                    <div className="receipt-icon">🧾</div>
-                    <strong>Drop your receipt here</strong>
-                    <p>or click to browse — JPEG, PNG, WebP, PDF up to 10MB</p>
-                  </div>
+                  <div className="receipt-big-icon" aria-hidden>🧾</div>
+                  <h3>
+                    Drop a receipt <em>right here</em>
+                  </h3>
+                  <p>or click to browse — JPEG, PNG, WebP, PDF · up to 10MB</p>
                 </div>
 
-                <div className="receipt-divider"><span>or</span></div>
+                <div className="receipt-divider"><span>or snap one now</span></div>
 
                 <button
                   type="button"
                   className="button secondary receipt-camera-btn"
                   onClick={() => setShowCamera(true)}
                 >
-                  📷 Use Camera
+                  📷 Open camera
                 </button>
+
+                <div className="scan-tips">
+                  <div className="scan-tip">
+                    <span className="scan-tip-icon" aria-hidden>💡</span>
+                    <div>
+                      <strong>Good lighting</strong>
+                      Natural daylight reads best. Avoid shadows across the receipt.
+                    </div>
+                  </div>
+                  <div className="scan-tip">
+                    <span className="scan-tip-icon" aria-hidden>📐</span>
+                    <div>
+                      <strong>Flat and straight</strong>
+                      Smooth out wrinkles; fit the whole receipt in the frame.
+                    </div>
+                  </div>
+                  <div className="scan-tip">
+                    <span className="scan-tip-icon" aria-hidden>🔎</span>
+                    <div>
+                      <strong>Zoom if long</strong>
+                      Snap the top half and bottom half separately if needed.
+                    </div>
+                  </div>
+                </div>
               </>
             )}
 
@@ -247,15 +342,47 @@ export function ReceiptScanPage() {
 
         {stage === "reviewing" || stage === "adding" ? (
           <div className="panel stack">
-            <div className="row between">
+            <div className="row between" style={{ flexWrap: "wrap", gap: 10 }}>
               <div>
-                <h3>Review Detected Items</h3>
+                <span className="section-eyebrow sage">Step 2 · Review</span>
+                <h3 style={{ fontFamily: '"Merriweather", serif', fontSize: 20, margin: "6px 0 2px" }}>
+                  Looks right? Uncheck anything odd.
+                </h3>
                 {storeInfo?.store && (
-                  <p>{storeInfo.store}{storeInfo.date ? ` · ${storeInfo.date}` : ""}</p>
+                  <p style={{ fontSize: 13 }}>
+                    {storeInfo.store}
+                    {storeInfo.date ? ` · ${storeInfo.date}` : ""}
+                  </p>
                 )}
               </div>
-              <span className="hero-badge">{selectedItems.length} selected</span>
+              <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+                <span className="hero-badge">{selectedItems.length} selected</span>
+                <button
+                  type="button"
+                  className="button tiny ghost"
+                  onClick={() => toggleAll(true)}
+                >
+                  Select all
+                </button>
+                <button
+                  type="button"
+                  className="button tiny ghost"
+                  onClick={() => toggleAll(false)}
+                >
+                  Clear
+                </button>
+              </div>
             </div>
+
+            {storeInfo?.store && (
+              <div className="scan-receipt-meta">
+                <span aria-hidden>🏪</span>
+                <span>
+                  Detected from <strong>{storeInfo.store}</strong>
+                  {storeInfo.date ? ` on ${storeInfo.date}` : ""}.
+                </span>
+              </div>
+            )}
 
             <div className="receipt-item-list">
               {reviewItems.map((item, i) => (
@@ -298,8 +425,14 @@ export function ReceiptScanPage() {
             </div>
 
             <div className="add-item-actions">
-              <button className="button ghost" onClick={() => { setStage("idle"); setReviewItems([]); }}>
-                Start Over
+              <button
+                className="button ghost"
+                onClick={() => {
+                  setStage("idle");
+                  setReviewItems([]);
+                }}
+              >
+                ← Start over
               </button>
               <button
                 className="button"
@@ -308,7 +441,7 @@ export function ReceiptScanPage() {
               >
                 {stage === "adding"
                   ? `Adding… (${addedCount}/${selectedItems.length})`
-                  : `Add ${selectedItems.length} ${selectedItems.length === 1 ? "item" : "items"} to Inventory`}
+                  : `Add ${selectedItems.length} ${selectedItems.length === 1 ? "item" : "items"} →`}
               </button>
             </div>
           </div>

@@ -106,16 +106,21 @@ export function AddItemPage() {
 
   return (
     <section className="stack">
-      <div className="panel">
-        <div className="row between">
-          <div>
-            <h2>Add Item</h2>
-            <p>Track a new item in your household inventory.</p>
-          </div>
-          <Link to="/scan-receipt" className="button secondary">
-            🧾 Scan Receipt
-          </Link>
+      <div className="page-hero">
+        <div className="page-hero-icon sage">➕</div>
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <span className="section-eyebrow sage">Add to inventory</span>
+          <h2>
+            One more item, <em>zero</em> waste.
+          </h2>
+          <p>
+            Track a fresh arrival by hand, or scan a receipt to pull in
+            a whole shop in one go.
+          </p>
         </div>
+        <Link to="/scan-receipt" className="button secondary">
+          🧾 Scan receipt
+        </Link>
       </div>
 
       <form className="stack" onSubmit={(event) => void submit(event)}>

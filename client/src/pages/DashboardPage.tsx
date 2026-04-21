@@ -1,9 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { api, Item, RecipeSuggestion } from "../api/client";
+import { CategoryChipRow } from "../components/CategoryChipRow";
+import { EditItemModal } from "../components/EditItemModal";
 import { EmptyState } from "../components/EmptyState";
 import { HouseholdSetup } from "../components/HouseholdSetup";
+import { HowItWorks } from "../components/HowItWorks";
+import { ImpactStats } from "../components/ImpactStats";
+import { ItemCard } from "../components/ItemCard";
 import { StatusBadge } from "../components/StatusBadge";
+import { Testimonials } from "../components/Testimonials";
 import { useAuth } from "../auth/AuthProvider";
+
+const HERO_IMAGE =
+  "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80";
 
 function daysLabel(days: number): string {
   if (days < 0) return `${Math.abs(days)}d overdue`;
@@ -13,15 +23,22 @@ function daysLabel(days: number): string {
 }
 
 function freshnessPercent(daysRemaining: number): number {
-  if (daysRemaining <= 0) return 0;
+  if (daysRemaining <= 0) return 100;
   return Math.min(100, Math.max(8, Math.round((daysRemaining / 30) * 100)));
 }
 
-function ItemTable({ items, statusFilter, onAction, onEdit }: {
+type ViewMode = "cards" | "table";
+
+function ItemTable({
+  items,
+  statusFilter,
+  onAction,
+  onEdit
+}: {
   items: Item[];
   statusFilter: "active" | "archived";
   onAction: (action: () => Promise<void>) => Promise<void>;
-  onEdit: (item: Item) => Promise<void>;
+  onEdit: (item: Item) => void;
 }) {
   if (items.length === 0) return null;
   return (
@@ -41,7 +58,7 @@ function ItemTable({ items, statusFilter, onAction, onEdit }: {
           {items.map((item) => (
             <tr key={item.id} className={`row-${item.status.toLowerCase()}`}>
               <td>{item.name}</td>
-              <td>{item.category}</td>
+              <td style={{ textTransform: "capitalize" }}>{item.category}</td>
               <td>{item.quantity}</td>
               <td>
                 <StatusBadge status={item.status} opened={item.opened} />
@@ -74,7 +91,7 @@ function ItemTable({ items, statusFilter, onAction, onEdit }: {
                       >
                         Consume
                       </button>
-                      <button className="button tiny ghost" onClick={() => void onEdit(item)}>
+                      <button className="button tiny ghost" onClick={() => onEdit(item)}>
                         Edit
                       </button>
                     </>
@@ -95,13 +112,40 @@ function ItemTable({ items, statusFilter, onAction, onEdit }: {
   );
 }
 
+function IconGrid() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+function IconList() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <circle cx="4" cy="6" r="1.2" fill="currentColor" />
+      <circle cx="4" cy="12" r="1.2" fill="currentColor" />
+      <circle cx="4" cy="18" r="1.2" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function DashboardPage() {
-  const { household } = useAuth();
+  const { user, household } = useAuth();
   const [statusFilter, setStatusFilter] = useState<"active" | "archived">("active");
   const [items, setItems] = useState<Item[]>([]);
   const [suggestions, setSuggestions] = useState<RecipeSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
 
   const load = useCallback(async () => {
     if (!household) return;
@@ -125,17 +169,35 @@ export function DashboardPage() {
     void load();
   }, [load]);
 
-  const stats = useMemo(() => ({
-    fresh: items.filter((i) => i.status === "FRESH").length,
-    useSoon: items.filter((i) => i.status === "USE_SOON").length,
-    expired: items.filter((i) => i.status === "EXPIRED").length
-  }), [items]);
+  const stats = useMemo(
+    () => ({
+      fresh: items.filter((i) => i.status === "FRESH").length,
+      useSoon: items.filter((i) => i.status === "USE_SOON").length,
+      expired: items.filter((i) => i.status === "EXPIRED").length
+    }),
+    [items]
+  );
 
-  const grouped = useMemo(() => ({
-    expired: items.filter((i) => i.status === "EXPIRED"),
-    useSoon: items.filter((i) => i.status === "USE_SOON"),
-    fresh: items.filter((i) => i.status === "FRESH")
-  }), [items]);
+  const firstName = user?.name ? user.name.split(" ")[0] : "there";
+
+  const filteredItems = useMemo(() => {
+    if (categoryFilter === "all") return items;
+    return items.filter((i) => i.category === categoryFilter);
+  }, [items, categoryFilter]);
+
+  const grouped = useMemo(
+    () => ({
+      expired: filteredItems.filter((i) => i.status === "EXPIRED"),
+      useSoon: filteredItems.filter((i) => i.status === "USE_SOON"),
+      fresh: filteredItems.filter((i) => i.status === "FRESH")
+    }),
+    [filteredItems]
+  );
+
+  const orderedItems = useMemo(
+    () => [...grouped.expired, ...grouped.useSoon, ...grouped.fresh],
+    [grouped]
+  );
 
   const runItemAction = async (action: () => Promise<void>) => {
     setError(null);
@@ -147,81 +209,149 @@ export function DashboardPage() {
     }
   };
 
-  const quickEdit = async (item: Item) => {
-    const nextName = window.prompt("Item name", item.name);
-    if (nextName === null) return;
-    const nextQuantity = window.prompt("Quantity", item.quantity);
-    if (nextQuantity === null) return;
-    const nextCustomDays = window.prompt(
-      "Custom fresh days (blank for none)",
-      item.customFreshDays?.toString() ?? ""
-    );
-    if (nextCustomDays === null) return;
-    const customFreshDays = nextCustomDays.trim() === "" ? null : Number(nextCustomDays.trim());
-    await runItemAction(async () => {
-      await api.updateItem(item.id, {
-        name: nextName,
-        quantity: nextQuantity,
-        customFreshDays: Number.isNaN(customFreshDays) ? null : customFreshDays
-      });
-    });
+  const openEdit = (item: Item) => {
+    setError(null);
+    setEditingItem(item);
   };
 
   if (!household) {
     return (
       <section className="stack">
-        <div className="panel">
-          <h2>Join or create a household</h2>
-          <p>Shared household inventory unlocks item tracking, alerts, and analytics.</p>
+        <div className="page-hero">
+          <div className="page-hero-icon">🏡</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span className="section-eyebrow">Welcome, {firstName}</span>
+            <h2>
+              Let&rsquo;s set up your <em>household</em>
+            </h2>
+            <p>Shared household inventory unlocks item tracking, alerts, and analytics across everyone in your kitchen.</p>
+          </div>
         </div>
         <HouseholdSetup />
       </section>
     );
   }
 
+  const impactStats = [
+    { icon: "🥬", value: String(stats.fresh), label: "Fresh items", tone: "sage" as const },
+    { icon: "⏳", value: String(stats.useSoon), label: "Use soon", tone: "honey" as const },
+    { icon: "⚠️", value: String(stats.expired), label: "Need attention", tone: "tomato" as const },
+    { icon: "🧾", value: String(items.length), label: "Tracked total", tone: "navy" as const }
+  ];
+
+  const totalActive = grouped.expired.length + grouped.useSoon.length + grouped.fresh.length;
+
   return (
-    <section className="stack">
-      <section className="panel dashboard-hero">
-        <div>
-          <h2>Inventory Overview</h2>
-          <p>Monitor freshness in real time and act before food gets wasted.</p>
-        </div>
-        <div className="hero-badge">{items.length} {items.length === 1 ? "item" : "items"}</div>
-      </section>
+    <section className="stack" style={{ gap: 32 }}>
+      {/* ── Marketing-style hero ── */}
+      <section className="marketing-hero">
+        <div className="marketing-hero-grid">
+          <div className="marketing-hero-copy">
+            <span className="marketing-hero-eyebrow">Welcome back, {firstName}</span>
+            <h1>
+              Your pantry is <em>still good</em> — <br />
+              let&rsquo;s keep it that way.
+            </h1>
+            <p className="marketing-hero-lede">
+              {stats.useSoon + stats.expired > 0
+                ? `You have ${stats.useSoon} item${stats.useSoon === 1 ? "" : "s"} to use soon and ${stats.expired} past prime. A few small moves today mean zero waste this week.`
+                : "Everything's fresh in the " + household.name + " kitchen. Add new groceries or browse recipe ideas below."}
+            </p>
 
-      <div className="metric-grid">
-        <article className="metric-card fresh">
-          <span>Fresh</span>
-          <strong>{stats.fresh}</strong>
-        </article>
-        <article className="metric-card use-soon">
-          <span>Use Soon</span>
-          <strong>{stats.useSoon}</strong>
-        </article>
-        <article className="metric-card expired">
-          <span>Expired</span>
-          <strong>{stats.expired}</strong>
-        </article>
-      </div>
+            <div className="marketing-hero-actions">
+              <Link className="button" to="/add-item">
+                + Add an item
+              </Link>
+              <Link className="button secondary" to="/scan-receipt">
+                🧾 Scan receipt
+              </Link>
+            </div>
 
-      <section className="panel">
-        <div className="row between">
-          <h2>Inventory</h2>
-          <div className="segmented">
-            <button
-              className={statusFilter === "active" ? "active" : ""}
-              onClick={() => setStatusFilter("active")}
-            >
-              Active
-            </button>
-            <button
-              className={statusFilter === "archived" ? "active" : ""}
-              onClick={() => setStatusFilter("archived")}
-            >
-              Archived
-            </button>
+            <div className="marketing-hero-metrics">
+              <div className="marketing-hero-metric">
+                <strong>{items.length}</strong>
+                <span>In your fridge</span>
+              </div>
+              <div className="marketing-hero-metric">
+                <strong>{stats.fresh}</strong>
+                <span>Fresh & ready</span>
+              </div>
+              <div className="marketing-hero-metric">
+                <strong>{stats.useSoon + stats.expired}</strong>
+                <span>Need attention</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="marketing-hero-media"
+            style={{ backgroundImage: `url(${HERO_IMAGE})` }}
+            aria-hidden
+          >
+            <div className="marketing-hero-floating-card">
+              <div className="float-icon">🔔</div>
+              <div className="float-text">
+                <strong>{stats.useSoon} item{stats.useSoon === 1 ? "" : "s"} to use soon</strong>
+                <span>Check the use-soon tab</span>
+              </div>
+            </div>
           </div>
         </div>
+      </section>
+
+      {/* ── Impact stats bar ── */}
+      <ImpactStats stats={impactStats} />
+
+      {/* ── Inventory ── */}
+      <section className="panel stack" style={{ gap: 14 }}>
+        <div className="row between" style={{ flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <span className="section-eyebrow sage">Your inventory</span>
+            <h2 style={{ marginTop: 8, fontSize: 22 }}>
+              {statusFilter === "active" ? "What's in the kitchen" : "Archived items"}
+            </h2>
+          </div>
+          <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
+            <div className="view-toggle" role="tablist" aria-label="View mode">
+              <button
+                className={viewMode === "cards" ? "active" : ""}
+                onClick={() => setViewMode("cards")}
+                aria-pressed={viewMode === "cards"}
+              >
+                <IconGrid /> Cards
+              </button>
+              <button
+                className={viewMode === "table" ? "active" : ""}
+                onClick={() => setViewMode("table")}
+                aria-pressed={viewMode === "table"}
+              >
+                <IconList /> Table
+              </button>
+            </div>
+            <div className="segmented">
+              <button
+                className={statusFilter === "active" ? "active" : ""}
+                onClick={() => setStatusFilter("active")}
+              >
+                Active
+              </button>
+              <button
+                className={statusFilter === "archived" ? "active" : ""}
+                onClick={() => setStatusFilter("archived")}
+              >
+                Archived
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {statusFilter === "active" && items.length > 0 && (
+          <CategoryChipRow
+            items={items}
+            active={categoryFilter}
+            onChange={setCategoryFilter}
+          />
+        )}
 
         {error ? <p className="error-text">{error}</p> : null}
         {loading ? <p className="subtle">Loading…</p> : null}
@@ -229,8 +359,32 @@ export function DashboardPage() {
         {!loading && items.length === 0 ? (
           <EmptyState
             title="No inventory yet"
-            description="Add your first item to start freshness tracking."
+            description="Add your first item above — or scan a receipt to pull everything in at once."
           />
+        ) : !loading && filteredItems.length === 0 ? (
+          <EmptyState
+            title="Nothing in this category"
+            description="Pick another category or tap All to see everything you're tracking."
+          />
+        ) : viewMode === "cards" && statusFilter === "active" ? (
+          <div className="item-card-grid">
+            {orderedItems.map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                onOpen={(i) =>
+                  void runItemAction(() => api.openItem(i.id).then(() => undefined))
+                }
+                onConsume={(i) =>
+                  void runItemAction(() => api.consumeItem(i.id).then(() => undefined))
+                }
+                onEdit={(i) => openEdit(i)}
+                onDelete={(i) =>
+                  void runItemAction(() => api.deleteItem(i.id).then(() => undefined))
+                }
+              />
+            ))}
+          </div>
         ) : statusFilter === "active" ? (
           <>
             {grouped.expired.length > 0 && (
@@ -238,7 +392,7 @@ export function DashboardPage() {
                 items={grouped.expired}
                 statusFilter={statusFilter}
                 onAction={runItemAction}
-                onEdit={quickEdit}
+                onEdit={openEdit}
               />
             )}
             {grouped.useSoon.length > 0 && (
@@ -246,7 +400,7 @@ export function DashboardPage() {
                 items={grouped.useSoon}
                 statusFilter={statusFilter}
                 onAction={runItemAction}
-                onEdit={quickEdit}
+                onEdit={openEdit}
               />
             )}
             {grouped.fresh.length > 0 && (
@@ -254,7 +408,7 @@ export function DashboardPage() {
                 items={grouped.fresh}
                 statusFilter={statusFilter}
                 onAction={runItemAction}
-                onEdit={quickEdit}
+                onEdit={openEdit}
               />
             )}
           </>
@@ -263,19 +417,35 @@ export function DashboardPage() {
             items={items}
             statusFilter={statusFilter}
             onAction={runItemAction}
-            onEdit={quickEdit}
+            onEdit={openEdit}
           />
+        )}
+
+        {statusFilter === "active" && totalActive > 0 && (
+          <p className="subtle" style={{ fontSize: 12, textAlign: "right", marginTop: 4 }}>
+            Showing {filteredItems.length} of {items.length}
+            {categoryFilter !== "all" ? ` in ${categoryFilter}` : ""}
+          </p>
         )}
       </section>
 
+      {/* ── Recipes ── */}
       {statusFilter === "active" ? (
         <section className="panel">
-          <h2>Recipe Ideas</h2>
-          <p>Based on your use-soon items.</p>
+          <div className="row between" style={{ flexWrap: "wrap", gap: 10 }}>
+            <div>
+              <span className="section-eyebrow">Cook, don&rsquo;t compost</span>
+              <h2 style={{ marginTop: 8, fontSize: 22 }}>Recipe ideas from your kitchen</h2>
+              <p style={{ marginTop: 2 }}>
+                Pulled from the items closest to their best-by date.
+              </p>
+            </div>
+          </div>
+
           {suggestions.length === 0 ? (
             <EmptyState
               title="No recipe matches yet"
-              description="Use soon items will trigger recipe suggestions here."
+              description="Use-soon items will trigger tailored recipe suggestions here."
             />
           ) : (
             <div className="recipe-grid">
@@ -310,6 +480,32 @@ export function DashboardPage() {
           )}
         </section>
       ) : null}
+
+      {/* ── How it works ── */}
+      <HowItWorks />
+
+      {/* ── Testimonials ── */}
+      <Testimonials />
+
+      {/* ── CTA band ── */}
+      <section className="cta-band">
+        <div>
+          <h3>Still buying groceries the old way?</h3>
+          <p>
+            Forward your next supermarket email to StillGood or snap the
+            receipt — we&rsquo;ll do the tracking so you can do the cooking.
+          </p>
+        </div>
+        <Link to="/integrations" className="button">
+          Connect Gmail →
+        </Link>
+      </section>
+
+      <EditItemModal
+        item={editingItem}
+        onClose={() => setEditingItem(null)}
+        onSaved={load}
+      />
     </section>
   );
 }
