@@ -11,11 +11,15 @@ import { buildComputedFields, trackEvent } from "../items/items.service.js";
 export const integrationsRouter = Router();
 
 /**
- * Gmail OAuth is served from the API host (server) because Google's consent
- * flow redirects to a server-side endpoint. Client origin runs on 5173,
- * server on 4000 — we substitute the port rather than hard-code the URL.
+ * Gmail OAuth is served from the API host (server). In production the client
+ * and server live on different hostnames (e.g. Vercel + Railway), so prefer
+ * the explicit SERVER_PUBLIC_URL. In local dev we fall back to swapping the
+ * port of CLIENT_ORIGIN (5173 -> 4000).
  */
 function getServerOrigin(): string {
+  if (env.SERVER_PUBLIC_URL) {
+    return env.SERVER_PUBLIC_URL.replace(/\/$/, "");
+  }
   try {
     const url = new URL(env.CLIENT_ORIGIN);
     url.port = String(env.PORT);

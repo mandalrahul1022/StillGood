@@ -63,8 +63,6 @@ Optional integrations — add only the ones you want to enable:
 # Gmail receipt scanning (required for /integrations/gmail/*)
 GOOGLE_CLIENT_ID="..."
 GOOGLE_CLIENT_SECRET="..."
-# OAuth redirect; must match the URI registered in Google Cloud Console
-GOOGLE_REDIRECT_URI="http://localhost:4000/api/integrations/gmail/callback"
 
 # Gemini item extraction (required when Gmail is enabled)
 GEMINI_API_KEY="..."
@@ -76,13 +74,36 @@ TABSCANNER_API_KEY="..."
 
 # Recipe suggestions (optional; falls back to built-in suggestions if unset)
 SPOONACULAR_API_KEY="..."
+
+# Only needed in production when the client and server live on different
+# hostnames (e.g. Vercel client + Railway server). Used to build the Gmail
+# OAuth redirect URI. In local dev this is derived from CLIENT_ORIGIN + PORT.
+SERVER_PUBLIC_URL="https://your-server.up.railway.app"
 ```
 
 ### Setting up the Google OAuth client
 1. In Google Cloud Console, create an OAuth 2.0 Client ID of type "Web application".
-2. Add `http://localhost:4000/api/integrations/gmail/callback` as an authorized redirect URI.
+2. Add `http://localhost:4000/api/integrations/gmail/callback` as an authorized redirect URI for local dev, and `<SERVER_PUBLIC_URL>/api/integrations/gmail/callback` for production.
 3. Enable the **Gmail API** and **Generative Language API** for the project.
 4. Paste the client ID/secret into `server/.env` and restart `pnpm dev`.
+
+## Deploying (Vercel client + Railway server)
+The server is a Node/Express app intended for a container host (Railway,
+Fly.io, Render, etc.); the client is a static Vite build intended for Vercel.
+
+**Railway — server service**
+- `NODE_ENV=production`
+- `CLIENT_ORIGIN` — the full Vercel URL, e.g. `https://stillgood.vercel.app`, no trailing slash. CORS + the auth cookie depend on an exact match.
+- `SERVER_PUBLIC_URL` — the full Railway URL, e.g. `https://stillgood-server.up.railway.app`. Used to build the Gmail OAuth redirect URI.
+- `JWT_SECRET` — any strong random string.
+- `DATABASE_URL` — SQLite is fine but the container filesystem is ephemeral; point this at a path inside an attached Railway volume (e.g. `file:/app/data/dev.db`) or migrate to a managed DB.
+- `PORT` — Railway injects this automatically; don't hard-code it.
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GEMINI_API_KEY`, plus optional `GEMINI_MODEL`, `TABSCANNER_API_KEY`, `SPOONACULAR_API_KEY`.
+
+**Vercel — client project**
+- `VITE_API_URL` — the server URL plus `/api`, e.g. `https://stillgood-server.up.railway.app/api`. This is baked in at build time, so redeploy the client after changing it.
+
+In prod the auth cookie is issued with `SameSite=None; Secure`, so both hosts must be HTTPS (both Vercel and Railway are by default).
 
 ## Database Setup
 1. Apply migrations (includes the `GmailIntegration` table):
