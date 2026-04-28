@@ -15,3 +15,9 @@ client/dist
 .pnpm-store
 .vscode
 *.tsbuildinfo
+.venv/
+ai/dataset/
+ai/model/
+*.onnx
+*.pth
+__pycache__/
