@@ -56,9 +56,23 @@ export function AnalyticsPage() {
 
   return (
     <section className="stack">
-      <div className="row between">
-        <h2>Analytics</h2>
-        <select value={range} onChange={(e) => setRange(e.target.value as "week" | "month")}>
+      <div className="page-hero">
+        <div className="page-hero-icon honey">📈</div>
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <span className="section-eyebrow honey">Household analytics</span>
+          <h2>
+            See your waste shrink, <em>week over week</em>.
+          </h2>
+          <p>
+            Consumed, expired, and saved — the numbers that turn intention into
+            habit. Pick a time window to dig in.
+          </p>
+        </div>
+        <select
+          value={range}
+          onChange={(e) => setRange(e.target.value as "week" | "month")}
+          style={{ maxWidth: 200 }}
+        >
           <option value="week">Last 7 days</option>
           <option value="month">Last 30 days</option>
         </select>

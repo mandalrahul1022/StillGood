@@ -44,6 +44,7 @@ model User {
   id               String            @id @default(cuid())
   email            String            @unique
   passwordHash     String
+  googleId         String?           @unique
   name             String
   householdName    String?
   prefsEmail       Boolean           @default(false)
@@ -55,6 +56,20 @@ model User {
   alerts           Alert[]
   notificationLogs NotificationLog[]
   analyticsEvents  AnalyticsEvent[]
+  gmailIntegration GmailIntegration?
+}
+
+model GmailIntegration {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  gmailEmail   String
+  lastSyncAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model Household {

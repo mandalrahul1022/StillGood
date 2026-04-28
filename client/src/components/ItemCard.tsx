@@ -240,5 +240,4 @@ export default function ItemCard({ item, onStateChange }: ItemCardProps) {
         )}
       </div>
     </div>
-  );
 }

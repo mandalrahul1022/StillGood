@@ -233,7 +233,28 @@ export const api = {
   analyticsEvents: (range: "week" | "month") =>
     apiRequest<AnalyticsEvents>(`/analytics/history?range=${range}`),
   integrationsStatus: () =>
-    apiRequest<{ title: string; connected: boolean; description: string }>("/integrations/status"),
+    apiRequest<{
+      gmail: {
+        connected: boolean;
+        email: string | null;
+        lastSyncAt: string | null;
+        configured: boolean;
+      };
+    }>("/integrations/status"),
+  gmailConnectUrl: () => {
+    const base = API_BASE.startsWith("http") ? API_BASE : window.location.origin + API_BASE;
+    return `${base}/integrations/gmail/connect`;
+  },
+  gmailDisconnect: () =>
+    apiRequest<{ ok: true }>("/integrations/gmail/disconnect", {
+      method: "POST",
+      body: JSON.stringify({})
+    }),
+  gmailScan: () =>
+    apiRequest<{ added: number; skipped: number; items: Item[] }>("/integrations/gmail/scan", {
+      method: "POST",
+      body: JSON.stringify({})
+    }),
   scanReceipt: (file: File) => {
     const form = new FormData();
     form.append("receipt", file);
