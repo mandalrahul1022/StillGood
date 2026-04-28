@@ -1,240 +1,240 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { api, Item, RecipeSuggestion } from "../api/client";
-import { EmptyState } from "../components/EmptyState";
-import { HouseholdSetup } from "../components/HouseholdSetup";
-import { StatusBadge } from "../components/StatusBadge";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { api, Alert } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import AnalyticsSummary from "../components/AnalyticsSummary";
+import RecipeSuggestions from "../components/RecipeSuggestions";
+import InventoryGrid from "../components/InventoryGrid";
+
+/* ════════════════════════════════════════════════════════════
+   Toast system (dead‑simple, no external lib)
+   ════════════════════════════════════════════════════════════ */
+
+interface Toast {
+  id: number;
+  message: string;
+  type: "success" | "error" | "info";
+}
+
+let toastId = 0;
+
+function ToastStack({
+  toasts,
+  onDismiss,
+}: {
+  toasts: Toast[];
+  onDismiss: (id: number) => void;
+}) {
+  return (
+    <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          onClick={() => onDismiss(t.id)}
+          className={[
+            "pointer-events-auto px-4 py-2.5 rounded-lg text-sm font-medium shadow-lg",
+            "animate-[fadeSlideIn_300ms_ease_both] cursor-pointer",
+            t.type === "success"
+              ? "bg-emerald-600 text-white"
+              : t.type === "error"
+                ? "bg-red-600 text-white"
+                : "bg-zinc-700 text-zinc-100",
+          ].join(" ")}
+        >
+          {t.message}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   FreshEye Simulator dev panel
+   ════════════════════════════════════════════════════════════ */
+
+function FreshEyePanel({ onToast }: { onToast: (msg: string, type: Toast["type"]) => void }) {
+  const [itemId, setItemId] = useState("");
+  const [mode, setMode] = useState<"SEALED" | "OPEN">("SEALED");
+  const [busy, setBusy] = useState(false);
+
+  const simulate = async () => {
+    if (!itemId.trim()) return;
+    setBusy(true);
+    try {
+      // Try FreshEye simulator endpoint first, fall back to items/:id/open
+      const primary = await fetch(`/api/fresheye/simulate`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ itemId: Number(itemId), mode }),
+      });
+      if (primary.ok) {
+        onToast("Signal received", "success");
+        return;
+      }
+
+      // Fallback
+      const fallback = await fetch(`/api/items/${itemId}/open`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (fallback.ok) {
+        onToast("Signal received", "success");
+      } else {
+        onToast("Simulation failed", "error");
+      }
+    } catch {
+      onToast("Simulation failed", "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="bg-zinc-900 border border-dashed border-zinc-700 rounded-xl p-4">
+      <p className="text-zinc-400 text-sm font-mono mb-3">FreshEye Simulator</p>
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className="block text-zinc-500 text-xs mb-1">Item ID</label>
+          <input
+            type="number"
+            value={itemId}
+            onChange={(e) => setItemId(e.target.value)}
+            placeholder="42"
+            className="w-24 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-zinc-500"
+          />
+        </div>
+        <div>
+          <label className="block text-zinc-500 text-xs mb-1">State</label>
+          <select
+            value={mode}
+            onChange={(e) => setMode(e.target.value as "SEALED" | "OPEN")}
+            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-zinc-500"
+          >
+            <option value="SEALED">Sealed</option>
+            <option value="OPEN">Open</option>
+          </select>
+        </div>
+        <button
+          disabled={busy || !itemId.trim()}
+          onClick={simulate}
+          className="px-4 py-1.5 text-sm font-semibold rounded-lg bg-zinc-700 hover:bg-zinc-600 text-zinc-200 transition-colors disabled:opacity-40"
+        >
+          Simulate Detection
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   Dashboard page
+   ════════════════════════════════════════════════════════════ */
 
 export function DashboardPage() {
-  const { household } = useAuth();
-  const [statusFilter, setStatusFilter] = useState<"active" | "archived">("active");
-  const [items, setItems] = useState<Item[]>([]);
-  const [suggestions, setSuggestions] = useState<RecipeSuggestion[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const showDev = searchParams.get("dev") === "true";
 
-  const load = useCallback(async () => {
-    if (!household) {
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const [itemsResponse, recipeResponse] = await Promise.all([
-        api.listItems(statusFilter),
-        statusFilter === "active" ? api.recipeSuggestions() : Promise.resolve({ suggestions: [] })
-      ]);
-      setItems(itemsResponse.items);
-      setSuggestions(recipeResponse.suggestions);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load dashboard");
-    } finally {
-      setLoading(false);
-    }
-  }, [household, statusFilter]);
+  /* ── alerts ── */
+  const [alerts, setAlerts] = useState<Alert[]>([]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    api.alerts().then((r) => setAlerts(r.alerts)).catch(() => {});
+  }, []);
 
-  const stats = useMemo(() => {
-    const fresh = items.filter((item) => item.status === "FRESH").length;
-    const useSoon = items.filter((item) => item.status === "USE_SOON").length;
-    const expired = items.filter((item) => item.status === "EXPIRED").length;
-    return { fresh, useSoon, expired };
-  }, [items]);
+  const unreadCount = alerts.filter((a) => a.readAt === null).length;
 
-  const runItemAction = async (action: () => Promise<void>) => {
-    setError(null);
-    try {
-      await action();
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Action failed");
+  /* ── toasts ── */
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const pushToast = useCallback((message: string, type: Toast["type"] = "info") => {
+    const id = ++toastId;
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 2500);
+  }, []);
+
+  const dismissToast = useCallback((id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  /* ── auth guard ── */
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/login", { replace: true });
     }
-  };
+  }, [authLoading, user, navigate]);
 
-  const quickEdit = async (item: Item) => {
-    const nextName = window.prompt("Item name", item.name);
-    if (nextName === null) {
-      return;
-    }
-    const nextQuantity = window.prompt("Quantity", item.quantity);
-    if (nextQuantity === null) {
-      return;
-    }
-    const nextCustomDays = window.prompt(
-      "Custom fresh days (blank for none)",
-      item.customFreshDays?.toString() ?? ""
-    );
-    if (nextCustomDays === null) {
-      return;
-    }
-
-    const customFreshDays = nextCustomDays.trim() === "" ? null : Number(nextCustomDays.trim());
-    await runItemAction(async () => {
-      await api.updateItem(item.id, {
-        name: nextName,
-        quantity: nextQuantity,
-        customFreshDays: Number.isNaN(customFreshDays) ? null : customFreshDays
-      });
-    });
-  };
-
-  if (!household) {
+  if (authLoading) {
     return (
-      <section className="stack">
-        <div className="panel">
-          <h2>Join or create a household</h2>
-          <p>Shared household inventory unlocks item tracking, alerts, and analytics.</p>
-        </div>
-        <HouseholdSetup />
-      </section>
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <p className="text-zinc-500 text-sm animate-pulse">Loading…</p>
+      </div>
     );
   }
 
+  if (!user) return null; // will redirect
+
+  /* ── initials avatar ── */
+  const initials = user.name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   return (
-    <section className="stack">
-      <section className="panel dashboard-hero">
-        <div>
-          <h2>Inventory Overview</h2>
-          <p>Monitor freshness in real time and act before food gets wasted.</p>
-        </div>
-        <div className="hero-badge">{items.length} active signals</div>
-      </section>
+    <div className="min-h-screen bg-zinc-950 text-white">
+      {/* ── navbar ── */}
+      <nav className="sticky top-0 z-50 bg-zinc-950/90 backdrop-blur border-b border-zinc-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+          {/* left: brand */}
+          <span className="font-bold text-emerald-400 text-xl select-none">
+            🌿 Still Good
+          </span>
 
-      <div className="metric-grid">
-        <article className="metric-card">
-          <span>Fresh</span>
-          <strong>{stats.fresh}</strong>
-        </article>
-        <article className="metric-card">
-          <span>Use Soon</span>
-          <strong>{stats.useSoon}</strong>
-        </article>
-        <article className="metric-card">
-          <span>Expired</span>
-          <strong>{stats.expired}</strong>
-        </article>
-      </div>
-
-      <section className="panel">
-        <div className="row between">
-          <h2>Inventory</h2>
-          <div className="segmented">
+          {/* right: bell + avatar */}
+          <div className="flex items-center gap-4">
+            {/* alert bell */}
             <button
-              className={statusFilter === "active" ? "active" : ""}
-              onClick={() => setStatusFilter("active")}
+              onClick={() => navigate("/notifications")}
+              className="relative text-xl leading-none text-zinc-400 hover:text-white transition-colors"
+              aria-label="Notifications"
             >
-              Active
+              🔔
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white px-1">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
             </button>
-            <button
-              className={statusFilter === "archived" ? "active" : ""}
-              onClick={() => setStatusFilter("archived")}
-            >
-              Archived
-            </button>
-          </div>
-        </div>
-        {error ? <p className="error-text">{error}</p> : null}
-        {loading ? <p>Loading items...</p> : null}
 
-        {!loading && items.length === 0 ? (
-          <EmptyState
-            title="No inventory yet"
-            description="Add your first item to start freshness tracking."
-          />
-        ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Category</th>
-                  <th>Qty</th>
-                  <th>Status</th>
-                  <th>Days Left</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.name}</td>
-                    <td>{item.category}</td>
-                    <td>{item.quantity}</td>
-                    <td>
-                      <StatusBadge status={item.status} opened={item.opened} />
-                    </td>
-                    <td>{item.daysRemaining}</td>
-                    <td>
-                      <div className="row">
-                        {statusFilter === "active" ? (
-                          <>
-                            <button
-                              className="button tiny"
-                              disabled={item.opened === true}
-                              onClick={() => void runItemAction(() => api.openItem(item.id).then(() => undefined))}
-                            >
-                              {item.opened === true ? "Opened" : "Open"}
-                            </button>
-                            <button
-                              className="button tiny secondary"
-                              onClick={() =>
-                                void runItemAction(() => api.consumeItem(item.id).then(() => undefined))
-                              }
-                            >
-                              Consume
-                            </button>
-                            <button className="button tiny ghost" onClick={() => void quickEdit(item)}>
-                              Edit
-                            </button>
-                          </>
-                        ) : null}
-                        <button
-                          className="button tiny danger"
-                          onClick={() =>
-                            void runItemAction(() => api.deleteItem(item.id).then(() => undefined))
-                          }
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {statusFilter === "active" ? (
-        <section className="panel">
-          <h2>Recipe Ideas for Use Soon Items</h2>
-          {suggestions.length === 0 ? (
-            <EmptyState
-              title="No recipe matches yet"
-              description="Use soon items will trigger local recipe suggestions here."
-            />
-          ) : (
-            <div className="recipe-grid">
-              {suggestions.map((recipe) => (
-                <article className="recipe-card" key={recipe.name}>
-                  <h3>{recipe.name}</h3>
-                  <p>Matched: {recipe.matchedIngredients.join(", ")}</p>
-                  <p>Time: {recipe.timeEstimate}</p>
-                  <ol>
-                    {recipe.shortSteps.map((step) => (
-                      <li key={step}>{step}</li>
-                    ))}
-                  </ol>
-                </article>
-              ))}
+            {/* user chip */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-zinc-400 hidden sm:inline">{user.name}</span>
+              <div className="w-8 h-8 rounded-full bg-emerald-800 flex items-center justify-center text-xs font-bold text-emerald-200 select-none">
+                {initials}
+              </div>
             </div>
-          )}
-        </section>
-      ) : null}
-    </section>
+          </div>
+        </div>
+      </nav>
+
+      {/* ── page content ── */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <AnalyticsSummary />
+        <RecipeSuggestions />
+        <InventoryGrid />
+
+        {/* FreshEye dev panel (only with ?dev=true) */}
+        {showDev && <FreshEyePanel onToast={pushToast} />}
+      </main>
+
+      {/* ── toasts ── */}
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
+    </div>
   );
 }
