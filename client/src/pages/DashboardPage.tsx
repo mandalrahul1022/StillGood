@@ -371,17 +371,17 @@ export function DashboardPage() {
             {orderedItems.map((item) => (
               <ItemCard
                 key={item.id}
-                item={item}
-                onOpen={(i) =>
+                onOpen={(i: Item) =>
                   void runItemAction(() => api.openItem(i.id).then(() => undefined))
                 }
-                onConsume={(i) =>
+                onConsume={(i: Item) =>
                   void runItemAction(() => api.consumeItem(i.id).then(() => undefined))
                 }
-                onEdit={(i) => openEdit(i)}
-                onDelete={(i) =>
+                onEdit={(i: Item) => openEdit(i)}
+                onDelete={(i: Item) =>
                   void runItemAction(() => api.deleteItem(i.id).then(() => undefined))
                 }
+                item={item}
               />
             ))}
           </div>
